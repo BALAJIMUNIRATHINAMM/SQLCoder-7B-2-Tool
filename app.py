@@ -1,14 +1,20 @@
 import os
-print(os.listdir("/"))
 import streamlit as st
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 import asyncio
 
+# Check for CUDA availability
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 # Load the model and tokenizer
 MODEL_NAME = "defog/sqlcoder-7b-2"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, device_map="auto", low_cpu_mem_usage=True)
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME, torch_dtype=torch.float16 if DEVICE == "cuda" else torch.float32, 
+    device_map="auto" if DEVICE == "cuda" else None, 
+    low_cpu_mem_usage=True
+).to(DEVICE)
 
 def generate_sql_query(nl_query, schema, temperature, num_beams):
     """Generates SQL query from natural language input."""
@@ -24,16 +30,19 @@ def generate_sql_query(nl_query, schema, temperature, num_beams):
     Given the database schema, here is the SQL query that [QUESTION]{nl_query}[/QUESTION]
     [SQL]
     """
-    inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
-    outputs = model.generate(**inputs, max_new_tokens=256, do_sample=True, temperature=temperature, num_beams=num_beams)
+    inputs = tokenizer(prompt, return_tensors="pt").to(DEVICE)
+    outputs = model.generate(
+        **inputs, max_new_tokens=256, do_sample=True, 
+        temperature=temperature, num_beams=num_beams
+    )
     sql_query = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return sql_query.strip()
 
 # Fix for RuntimeError: This event loop is already running
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    asyncio.run(asyncio.sleep(0))
+if asyncio.get_event_loop().is_running():
+    async def dummy_async_function():
+        pass
+    asyncio.create_task(dummy_async_function())
 
 # Streamlit UI
 st.set_page_config(page_title="SQLCoder-7B-2 App", layout="wide")
