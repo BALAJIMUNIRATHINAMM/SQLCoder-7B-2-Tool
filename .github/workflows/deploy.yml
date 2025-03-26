@@ -22,4 +22,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run Streamlit App
-        run: streamlit run app.py --server.headless true
+        run: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
