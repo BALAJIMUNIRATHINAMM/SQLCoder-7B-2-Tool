@@ -8,7 +8,7 @@ import asyncio
 # Load the model and tokenizer
 MODEL_NAME = "defog/sqlcoder-7b-2"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, device_map="auto", low_cpu_mem_usage=False)
+model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, device_map="auto", low_cpu_mem_usage=True)
 
 def generate_sql_query(nl_query, schema, temperature, num_beams):
     """Generates SQL query from natural language input."""
@@ -55,12 +55,3 @@ if st.button("Generate SQL Query"):
         st.warning("Please provide both a query and a database schema.")
 
 st.sidebar.markdown("**🔹 Powered by SQLCoder-7B-2**")
-
-
-
-
-
-
-
-
-
